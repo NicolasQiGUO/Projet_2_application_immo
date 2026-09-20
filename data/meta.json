@@ -2,17 +2,47 @@
   "generated_at": "2026-09-20",
   "commune": "Orléans",
   "code_insee": "45234",
-  "nb_ventes": 1773,
-  "periode_debut": "2024-12-31",
+  "nb_ventes": 5718,
+  "periode_debut": "2021-01-04",
   "periode_fin": "2025-12-31",
   "ventes_par_quartier": {
-    "CENTRE VILLE": 394,
-    "DUNOIS MADELEINE": 431,
+    "DUNOIS MADELEINE": 2435,
+    "CENTRE VILLE": 2335,
     "SAINT MARCEAU": 360,
     "ACACIAS - BLOSSIERES - GARE": 202,
     "BARRIERE ST MARC - ARGONNE - FAUBOURG BOURGOGNE": 262,
     "LA SOURCE": 124
   },
+  "periode_par_quartier": {
+    "DUNOIS MADELEINE": {
+      "debut": "2021-01-05",
+      "fin": "2025-12-30"
+    },
+    "CENTRE VILLE": {
+      "debut": "2021-01-04",
+      "fin": "2025-12-30"
+    },
+    "SAINT MARCEAU": {
+      "debut": "2025-01-06",
+      "fin": "2025-12-31"
+    },
+    "ACACIAS - BLOSSIERES - GARE": {
+      "debut": "2025-01-07",
+      "fin": "2025-12-23"
+    },
+    "BARRIERE ST MARC - ARGONNE - FAUBOURG BOURGOGNE": {
+      "debut": "2025-01-02",
+      "fin": "2025-12-30"
+    },
+    "LA SOURCE": {
+      "debut": "2025-01-08",
+      "fin": "2025-12-30"
+    }
+  },
+  "quartiers_historique_complet": [
+    "CENTRE VILLE",
+    "DUNOIS MADELEINE"
+  ],
   "source_ventes": "DVF géolocalisées - data.gouv.fr (files.data.gouv.fr/geo-dvf)",
   "source_quartiers": "Orléans Métropole - Open Data (data.orleans-metropole.fr)"
 }
