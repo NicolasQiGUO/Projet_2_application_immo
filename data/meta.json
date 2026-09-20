@@ -1,11 +1,18 @@
 {
-  "generated_at": null,
+  "generated_at": "2026-09-20",
   "commune": "Orléans",
   "code_insee": "45234",
-  "nb_ventes": 0,
-  "periode_debut": null,
-  "periode_fin": null,
-  "ventes_par_quartier": {},
+  "nb_ventes": 1773,
+  "periode_debut": "2024-12-31",
+  "periode_fin": "2025-12-31",
+  "ventes_par_quartier": {
+    "CENTRE VILLE": 394,
+    "DUNOIS MADELEINE": 431,
+    "SAINT MARCEAU": 360,
+    "ACACIAS - BLOSSIERES - GARE": 202,
+    "BARRIERE ST MARC - ARGONNE - FAUBOURG BOURGOGNE": 262,
+    "LA SOURCE": 124
+  },
   "source_ventes": "DVF géolocalisées - data.gouv.fr (files.data.gouv.fr/geo-dvf)",
   "source_quartiers": "Orléans Métropole - Open Data (data.orleans-metropole.fr)"
 }
