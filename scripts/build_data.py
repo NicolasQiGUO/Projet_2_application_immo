@@ -9,6 +9,9 @@ La donnée officielle DVF a un délai de publication de 6 à 18 mois (le temps q
 notariat/le fisc traitent chaque vente). On prend donc les 365 jours les plus récents
 PARMI ce qui est publié, et on affiche clairement la période couverte dans l'appli.
 
+Exception : les quartiers listés dans QUARTIERS_HISTORIQUE_COMPLET gardent tout
+l'historique depuis 2020 au lieu de se limiter aux 365 derniers jours.
+
 Ce script est fait pour être lancé par la GitHub Action (.github/workflows/update-data.yml),
 qui tourne sur des serveurs ayant un accès internet normal.
 """
@@ -37,6 +40,15 @@ QUARTIERS_URLS = [
 ]
 
 TYPES_LOCAUX_RETENUS = {"Maison", "Appartement"}
+
+# Quartiers pour lesquels on garde tout l'historique depuis 2020 au lieu de
+# se limiter aux 365 derniers jours disponibles. Les noms doivent correspondre
+# exactement à ceux publiés par Orléans Métropole (voir data/meta.json après
+# une première génération pour vérifier l'orthographe exacte).
+QUARTIERS_HISTORIQUE_COMPLET = {"CENTRE VILLE", "DUNOIS MADELEINE"}
+HISTORIQUE_COMPLET_DEPUIS = date(2020, 1, 1)
+
+PREMIERE_ANNEE_DVF = 2020
 
 OUT_DIR = "data"
 
@@ -100,7 +112,7 @@ def fetch_dvf_department_year(year: int) -> pd.DataFrame | None:
 def fetch_ventes_orleans() -> pd.DataFrame:
     this_year = date.today().year
     frames = []
-    for year in (this_year, this_year - 1, this_year - 2):
+    for year in range(PREMIERE_ANNEE_DVF, this_year + 1):
         df = fetch_dvf_department_year(year)
         if df is not None:
             frames.append(df)
@@ -138,14 +150,9 @@ def fetch_ventes_orleans() -> pd.DataFrame:
 
     agg["date_mutation"] = pd.to_datetime(agg["date_mutation"])
     agg = agg[agg["surface_reelle_bati"] > 0]
-
-    max_date = agg["date_mutation"].max()
-    start_date = max_date - timedelta(days=365)
-    agg = agg[agg["date_mutation"] >= start_date]
-
     agg["prix_m2"] = (agg["valeur_fonciere"] / agg["surface_reelle_bati"]).round(0)
 
-    log(f"{len(agg)} ventes retenues entre {start_date.date()} et {max_date.date()}.")
+    log(f"{len(agg)} ventes retenues depuis {PREMIERE_ANNEE_DVF} (avant filtre par quartier).")
     return agg
 
 
@@ -197,6 +204,32 @@ def assign_quartiers(ventes: pd.DataFrame, quartiers_geojson: dict) -> list[dict
     return records
 
 
+# --- 4. Fenêtre de temps : 12 derniers mois, sauf exceptions -------------
+
+
+def filtrer_par_periode(records: list[dict]) -> list[dict]:
+    """Garde les 365 derniers jours pour la plupart des quartiers, et tout
+    l'historique depuis 2020 pour ceux listés dans QUARTIERS_HISTORIQUE_COMPLET."""
+
+    toutes_dates = [date.fromisoformat(r["date"]) for r in records]
+    if not toutes_dates:
+        return records
+
+    date_la_plus_recente = max(toutes_dates)
+    debut_12_mois = date_la_plus_recente - timedelta(days=365)
+
+    filtres = []
+    for r in records:
+        d = date.fromisoformat(r["date"])
+        if r["quartier"] in QUARTIERS_HISTORIQUE_COMPLET:
+            if d >= HISTORIQUE_COMPLET_DEPUIS:
+                filtres.append(r)
+        elif d >= debut_12_mois:
+            filtres.append(r)
+
+    return filtres
+
+
 # --- Main -----------------------------------------------------------------
 
 
@@ -204,10 +237,15 @@ def main() -> None:
     quartiers_geojson = fetch_quartiers()
     ventes_df = fetch_ventes_orleans()
     ventes = assign_quartiers(ventes_df, quartiers_geojson)
+    ventes = filtrer_par_periode(ventes)
 
     counts: dict[str, int] = {}
+    periode_par_quartier: dict[str, dict[str, str]] = {}
     for v in ventes:
         counts[v["quartier"]] = counts.get(v["quartier"], 0) + 1
+        p = periode_par_quartier.setdefault(v["quartier"], {"debut": v["date"], "fin": v["date"]})
+        p["debut"] = min(p["debut"], v["date"])
+        p["fin"] = max(p["fin"], v["date"])
 
     dates = [v["date"] for v in ventes]
     meta = {
@@ -218,6 +256,8 @@ def main() -> None:
         "periode_debut": min(dates) if dates else None,
         "periode_fin": max(dates) if dates else None,
         "ventes_par_quartier": counts,
+        "periode_par_quartier": periode_par_quartier,
+        "quartiers_historique_complet": sorted(QUARTIERS_HISTORIQUE_COMPLET),
         "source_ventes": "DVF géolocalisées - data.gouv.fr (files.data.gouv.fr/geo-dvf)",
         "source_quartiers": "Orléans Métropole - Open Data (data.orleans-metropole.fr)",
     }

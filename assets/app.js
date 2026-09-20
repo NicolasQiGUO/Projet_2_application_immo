@@ -8,6 +8,7 @@ let quartiersLayer;
 let ventesLayer;
 let quartiersGeojson;
 let ventes = [];
+let meta = {};
 let currentQuartier = "__all__";
 
 async function loadJson(path) {
@@ -37,16 +38,18 @@ function markerForVente(v) {
   return marker;
 }
 
-function renderQuartierList(meta) {
+function renderQuartierList() {
   const listEl = document.getElementById("quartier-list");
   listEl.innerHTML = "";
 
+  const historiqueComplet = new Set(meta.quartiers_historique_complet || []);
   const names = Object.keys(meta.ventes_par_quartier || {}).sort((a, b) => a.localeCompare(b, "fr"));
   for (const name of names) {
     const btn = document.createElement("button");
     btn.className = "quartier-item";
     btn.dataset.quartier = name;
-    btn.innerHTML = `<span class="quartier-nom">${name}</span><span class="quartier-count">${meta.ventes_par_quartier[name]}</span>`;
+    const badge = historiqueComplet.has(name) ? ' <span class="quartier-badge">depuis 2020</span>' : "";
+    btn.innerHTML = `<span class="quartier-nom">${name}${badge}</span><span class="quartier-count">${meta.ventes_par_quartier[name]}</span>`;
     btn.addEventListener("click", () => selectQuartier(name));
     listEl.appendChild(btn);
   }
@@ -61,9 +64,28 @@ function setActiveButton(quartier) {
   });
 }
 
+function updatePeriodeText(quartier) {
+  const periodeEl = document.getElementById("periode");
+  const nb = quartier === "__all__" ? meta.nb_ventes : meta.ventes_par_quartier?.[quartier] || 0;
+  const p =
+    quartier === "__all__"
+      ? { debut: meta.periode_debut, fin: meta.periode_fin }
+      : meta.periode_par_quartier?.[quartier];
+
+  if (!p || !p.debut || !p.fin) {
+    periodeEl.textContent = "Aucune vente sur la période disponible.";
+    return;
+  }
+
+  const historique = quartier !== "__all__" && (meta.quartiers_historique_complet || []).includes(quartier);
+  const suffix = historique ? " (historique complet depuis 2020 pour ce quartier)" : "";
+  periodeEl.textContent = `${nb} ventes trouvées, du ${dateFmt.format(new Date(p.debut))} au ${dateFmt.format(new Date(p.fin))}${suffix} — données mises à jour le ${dateFmt.format(new Date(meta.generated_at))}`;
+}
+
 function selectQuartier(quartier) {
   currentQuartier = quartier;
   setActiveButton(quartier);
+  updatePeriodeText(quartier);
 
   ventesLayer.clearLayers();
   const filtered = quartier === "__all__" ? ventes : ventes.filter((v) => v.quartier === quartier);
@@ -95,7 +117,7 @@ function quartierName(props) {
 }
 
 async function init() {
-  map = L.map("map").setView(ORLEANS_CENTER, 13);
+  map = L.map("map", { preferCanvas: true }).setView(ORLEANS_CENTER, 13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap contributors",
     maxZoom: 19,
@@ -104,12 +126,13 @@ async function init() {
   ventesLayer = L.layerGroup().addTo(map);
 
   try {
-    const [meta, quartiers, ventesData] = await Promise.all([
+    const [metaData, quartiers, ventesData] = await Promise.all([
       loadJson("data/meta.json"),
       loadJson("data/quartiers.geojson"),
       loadJson("data/ventes.json"),
     ]);
 
+    meta = metaData;
     ventes = ventesData;
     quartiersGeojson = quartiers;
 
@@ -122,14 +145,8 @@ async function init() {
       },
     }).addTo(map);
 
-    renderQuartierList(meta);
+    renderQuartierList();
 
-    const periodeEl = document.getElementById("periode");
-    if (meta.periode_debut && meta.periode_fin) {
-      periodeEl.textContent = `${meta.nb_ventes} ventes trouvées, du ${dateFmt.format(new Date(meta.periode_debut))} au ${dateFmt.format(new Date(meta.periode_fin))} — données mises à jour le ${dateFmt.format(new Date(meta.generated_at))}`;
-    } else {
-      periodeEl.textContent = "Aucune vente sur la période disponible.";
-    }
     document.getElementById("source-info").textContent =
       `Sources : ${meta.source_ventes} ; ${meta.source_quartiers}`;
 

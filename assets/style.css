@@ -91,6 +91,18 @@ html, body {
   font-weight: 600;
 }
 
+.quartier-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
 .sidebar-footer {
   margin-top: auto;
   padding: 14px 20px;
