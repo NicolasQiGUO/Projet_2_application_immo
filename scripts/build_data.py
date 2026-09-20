@@ -92,21 +92,36 @@ def quartier_name(props: dict) -> str:
 
 
 def fetch_dvf_department_year(year: int) -> pd.DataFrame | None:
-    url = f"https://files.data.gouv.fr/geo-dvf/latest/csv/{year}/departements/{DEPARTEMENT}.csv.gz"
-    try:
-        log(f"Téléchargement DVF {year} pour le département {DEPARTEMENT} ...")
-        r = requests.get(url, timeout=180)
-        if r.status_code == 404:
-            log(f"  pas de fichier pour {year} (404), on ignore.")
-            return None
-        r.raise_for_status()
-        raw = gzip.decompress(r.content)
-        df = pd.read_csv(io.BytesIO(raw), dtype={"code_commune": str}, low_memory=False)
-        log(f"  -> {len(df)} lignes brutes pour le département.")
-        return df
-    except Exception as e:  # noqa: BLE001
-        log(f"  échec pour {year} : {e}")
-        return None
+    """Le format des fichiers geo-dvf a changé au fil des ans : certaines
+    années ne publient qu'un fichier par département, d'autres seulement un
+    fichier par commune. On essaie plusieurs adresses possibles, dans l'ordre,
+    et on garde la première qui répond."""
+
+    base = f"https://files.data.gouv.fr/geo-dvf/latest/csv/{year}"
+    candidats = [
+        f"{base}/departements/{DEPARTEMENT}.csv.gz",
+        f"{base}/communes/{DEPARTEMENT}/{INSEE_COMMUNE}.csv.gz",
+        f"{base}/communes/{DEPARTEMENT}/{INSEE_COMMUNE}.csv",
+        f"{base}/communes/{INSEE_COMMUNE}.csv.gz",
+        f"{base}/communes/{INSEE_COMMUNE}.csv",
+    ]
+
+    for url in candidats:
+        try:
+            log(f"Téléchargement DVF {year} : {url} ...")
+            r = requests.get(url, timeout=180)
+            if r.status_code == 404:
+                continue
+            r.raise_for_status()
+            content = gzip.decompress(r.content) if url.endswith(".gz") else r.content
+            df = pd.read_csv(io.BytesIO(content), dtype={"code_commune": str}, low_memory=False)
+            log(f"  -> {len(df)} lignes brutes récupérées.")
+            return df
+        except Exception as e:  # noqa: BLE001
+            log(f"  échec pour {url} : {e}")
+
+    log(f"  aucun fichier trouvé pour {year}, on ignore cette année.")
+    return None
 
 
 def fetch_ventes_orleans() -> pd.DataFrame:
