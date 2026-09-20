@@ -1,0 +1,11 @@
+{
+  "generated_at": null,
+  "commune": "Orléans",
+  "code_insee": "45234",
+  "nb_ventes": 0,
+  "periode_debut": null,
+  "periode_fin": null,
+  "ventes_par_quartier": {},
+  "source_ventes": "DVF géolocalisées - data.gouv.fr (files.data.gouv.fr/geo-dvf)",
+  "source_quartiers": "Orléans Métropole - Open Data (data.orleans-metropole.fr)"
+}

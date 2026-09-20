@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ventes immobilières par quartier — Orléans</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-title">
+      <h1>Ventes immobilières par quartier — Orléans</h1>
+      <p id="periode" class="subtitle">Chargement des données…</p>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <button class="quartier-item quartier-all active" data-quartier="__all__">
+        <span class="quartier-nom">Tous les quartiers</span>
+        <span class="quartier-count" id="count-all">–</span>
+      </button>
+      <div id="quartier-list"></div>
+      <div class="sidebar-footer">
+        <p id="source-info"></p>
+      </div>
+    </aside>
+
+    <section class="map-wrap">
+      <div id="map"></div>
+      <div id="empty-state" class="empty-state" hidden>
+        <p>Aucune donnée pour le moment.</p>
+        <p class="empty-sub">La première synchronisation automatique n'a pas encore eu lieu.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

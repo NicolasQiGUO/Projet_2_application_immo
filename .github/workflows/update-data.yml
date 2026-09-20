@@ -1,0 +1,40 @@
+name: Mise à jour des données immobilières
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Le 1er de chaque mois à 5h du matin (heure UTC). DVF n'est en pratique
+    # republié que 1 à 2 fois par an, mais tourner tous les mois ne coûte
+    # rien et garantit qu'on ne rate pas une mise à jour.
+    - cron: "0 5 1 * *"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer les dépendances
+        run: pip install -r scripts/requirements.txt
+
+      - name: Construire les données (ventes + quartiers)
+        run: python scripts/build_data.py
+
+      - name: Publier les données si elles ont changé
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "Aucun changement de données."
+          else
+            git commit -m "Mise à jour automatique des données immobilières"
+            git push
+          fi
